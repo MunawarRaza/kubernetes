@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    env: qa1
+spec:
+  selector:
+    matchLabels:
+      type: frontend
+  replicas: 3
+  template:
+    metadata:
+      name: frontend-pod
+      labels:
+        type: frontend
+    spec:
+      containers:
+        - name: frontend-container
+          image: nginx

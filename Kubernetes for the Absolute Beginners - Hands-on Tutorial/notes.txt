@@ -1,0 +1,44 @@
+
+#key value pair
+
+Fruits: Apple
+Vegetables: Carrot
+Liquid: Water
+
+#Array/List
+
+Fruits:
+- Apple
+- Banana
+- Orange
+
+Vegetables:
+- Carrot
+- Tomato
+
+# Note: - indicates that is an element of an array/list 
+
+# Dictionary / Map
+Fruits: Apple
+Vegetables: Carrot
+Liquid: Water
+or
+
+Banana:
+   Calories: 185
+   Fat: 0.5 g
+   Carbs: 27 g
+
+# Dictionary and lists
+
+Fruits: # array/list
+- Banana: # element of array/list
+     Calories: 185  # dictonary 
+     Fat: 0.5 g     # dictonary 
+     Carbs: 27 g    # dictonary 
+- Grape: # element of array/list
+     Calories: 62   # dictonary 
+     Fat: 0.3       # dictonary 
+     Carbs: 16g     # dictonary 
+
+

@@ -1,0 +1,60 @@
+kubernetes:
+
+
+## how to check my init is system or not ##
+ps -p 1
+ls -l /sbin/init
+	If it links to /lib/systemd/systemd, systemd is the init system.
+pstree
+
+
+## how to check which cgroup driver i have ##
+mount -t cgroup
+	Look for lines starting with "cgroup" and note the mount path
+		If it's mounted under /sys/fs/cgroup, the driver is cgroupfs.
+		If it's mounted under /run/systemd/cgroups, the driver is systemd.
+Checking Docker Configuration (if applicable):
+	docker info | grep -i cgroup
+
+ Using Systemd Tools (if systemd is in use):
+ 	systemd-cgtop
+	systemd-cgls
+
+
+cgroup
+	v1
+	v2
+
+cgroup driver 
+	cgroupfs
+		default
+	systemd
+		use if cgroup v2
+		use if init is systemd
+
+container run time
+	containerd 
+	docker engine
+	cri-o
+	Mirantis CR
+
+CR and kubelet both use cgroup driver to interface with cgroup so that they can manage resources.
+
+Configure cgroup driver as systemd drive
+	Containerd
+		/etc/containerd/config.toml
+			SystemdCgroup = true
+		containerd config default > /etc/containerd/config.toml
+
+	kubelet
+		edit the KubeletConfiguration option of cgroupDriver and set it to systemd. For example
+			apiVersion: kubelet.config.k8s.io/v1beta1
+			kind: KubeletConfiguration
+			...
+			cgroupDriver: systemd
+
+
+
+
+
+

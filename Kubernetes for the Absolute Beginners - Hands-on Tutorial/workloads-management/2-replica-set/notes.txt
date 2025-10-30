@@ -1,0 +1,6 @@
+Replica-set uses to launch the multiple pods of an application. It uses the 
+selector:
+    matchLabels:
+      type: frontend
+replicaset uses the matchLabels to group the pods. If we need three replicas of a pod and one of them are running before with lable ( type: frontend ).
+

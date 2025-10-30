@@ -1,0 +1,8 @@
+### How to Remove the node from the cluster ###
+
+1- List all the nodes from the cluster
+    kubectl get nodes
+2- Drain node in preparation for maintenance
+    kubectl drain --ignore-daemonsets <node-name>
+3- Delete node by its name
+    kubectl delete node <node-name>

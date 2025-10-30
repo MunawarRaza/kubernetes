@@ -1,0 +1,37 @@
+1- kubeadm reset
+    kubeadm reset
+2- Uninstall Relevant Packages
+    # Debian and Ubuntu
+    sudo apt-get purge kubeadm kubectl kubelet kubernetes-cni kube*
+    # Fedora and Red Hat
+    sudo dnf remove kubeadm kubectl kubelet kubernetes-cni kube*
+3- Remove additional unused dependencies:
+    # Debian and Ubuntu
+    sudo apt autoremove
+
+    # Fedora and Red Hat
+    sudo dnf autoremove
+4- Remove Related Files and Directories
+    rm -rf ~/.kube
+    rm -rf /etc/cni /etc/kubernetes rm -f /etc/apparmor.d/docker /etc/systemd/system/etcd*
+    rm -rf /var/lib/dockershim /var/lib/etcd /var/lib/kubelet /var/lib/etcd2/ /var/run/kubernetes
+5- Optional: Docker
+    # Remove all unused containers 
+    docker image prune -a
+    # Restart service
+    sudo systemctl restart docker
+6- Uninstall Docker
+    # Debian and Ubuntu
+    sudo apt purge docker-engine docker docker.io docker-ce docker-ce-cli containerd containerd.io runc --allow-change-held-packages
+    # Fedora and Red Hat
+    sudo dnf remove docker-ce docker-ce-cli containerd.io
+7- Remove any unused dependencies as well
+    # Debian and Ubuntu
+    sudo apt autoremove
+    # Fedora and Red Hat
+    sudo dnf autoremove
+8- Remove the docker group as well
+    sudo groupdel docker
+9- Reload Systemd Manager
+    sudo systemctl reload-daemon
+

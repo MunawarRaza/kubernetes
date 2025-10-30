@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: frontend-rc
+  labels:
+    type: frontend-rc
+    env: test
+spec:
+  replicas: 3
+  selector:
+    type: frontend
+  template:
+    metadata:
+      name: first-pod
+      labels:
+        type: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
