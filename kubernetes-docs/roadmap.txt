@@ -1,0 +1,108 @@
+Cgroup
+	what is cgroup
+	what are the versions of its
+	how to check which version is active
+	what is cgroup driver
+	how cgroups work with systemd
+	difference between cgroups vs ulimit
+	CPU throttling vs Memory OOM
+	cgroup hierarchy in Kubernetes
+
+container run time
+	what is container run time
+	archivtecture of container run time
+	how container run time interacts with cgroup
+	what happens when we hit docker run command and how a container is started (Architecture)
+	docker/container run time networking
+	Docker vs containerd vs CRI-O
+	container lifecycle (create → start → pause → stop → delete)
+	namespaces (PID, NET, IPC, MNT, UTS)
+	overlayfs / union filesystem (image layers)
+
+CNI
+	what is container network interface
+	CNI architecture (plugin + config)
+	IPAM (how IP is assigned)
+	difference between:
+		* Calico
+		* Flannel
+		* Weave
+		* Cilium
+	pod-to-pod communication flow
+	kube-proxy (iptables vs IPVS)
+
+kubernetes
+	kubernetes architecture
+	kubernetes networking
+	how a kubernetes interact with container run time
+	how a kubernetes interact with thid party networking components like calci, flannel etc
+	how a node is register
+	how a pod get's its ip (architecture)
+	control plane components deep dive:
+		* API server
+		* scheduler
+		* controller manager
+		* etcd
+	Pod lifecycle
+	Service types (ClusterIP, NodePort, LoadBalancer)
+		* Ingress vs Service
+		* kube-proxy internals
+		* DNS (CoreDNS)
+
+Scheduling & Resource Management
+
+	* how scheduler works internally
+	* taints & tolerations
+	* node selectors & affinity
+	* pod priority & preemption
+	* HPA / VPA
+	
+Storage (CSI)
+	* what is CSI
+	* PV, PVC, StorageClass
+	* dynamic provisioning
+	* volume lifecycle
+	* stateful vs stateless workloads
+
+🔥 Security (VERY IMPORTANT)
+	* RBAC
+	* ServiceAccounts
+	* Secrets vs ConfigMaps
+	* Pod Security Standards
+	* NetworkPolicies
+	* container security basics (capabilities, seccomp)
+
+🔥 Observability & Debugging
+	* logging architecture
+	* metrics server
+	* Prometheus basics
+	* common kubectl debug commands
+	* troubleshooting:
+		* CrashLoopBackOff
+		* ImagePullBackOff
+		* OOMKilled
+		* Node NotReady
+
+🔥 Controllers & Workloads
+	* Deployment vs StatefulSet vs DaemonSet vs Job
+	* rolling updates
+	* probes (liveness, readiness, startup)
+	* restart policies
+
+🔥 Production & Real-World Kubernetes
+	* cluster upgrade strategy
+	* backup & restore (etcd)
+	* multi-node networking pitfalls
+	* resource overcommit
+	* best practices for limits/requests
+	* high availability control plane
+	
+Linux
+ └── cgroups + namespaces
+      └── container runtime
+           └── CNI
+                └── Kubernetes core
+                     └── networking
+                          └── storage
+                               └── security
+                                    └── production
