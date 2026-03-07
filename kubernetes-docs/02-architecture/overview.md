@@ -34,6 +34,11 @@ Note: Master or Control Plane Components can be installed on any machine of the 
 
 #### Kuber API Server
 The API server acts as the front-end for kubernetes that exposes the Kubernetes API. The users, management devices, Command line interfaces all talk to the API server to interact with the kubernetes cluster. The kube-apiserver is designed to scale horizontally, that is, it scales by deploying more instances
+1. Authenticate User
+2. Validate Request
+3. Retrive Data
+4. Update ETCD
+
 
 #### ETCD
 
@@ -42,6 +47,7 @@ ETCD is a distributed reliable key-value store used by kubernetesto to store all
 #### Schedulers
 
 The scheduler is responsible for distributing work or pods across multiple nodes. It looks for newly created pod and assigns them to Nodes. The controllers makes decisions to bring up new pods in such cases.
+It only decides which pods going where. It did not create pod
 
 Note:
 
@@ -58,12 +64,17 @@ It constantly checks if the current state (e.g. 2 pods are running) matches the 
 There are many different types of controllers. Some examples of them are:
 
 * Node controller: 
-
   - Responsible for noticing and responding when nodes go down.
+  - Node Monitor Period = 5s
+  - Node Monitor Grace Period = 40s
+  - POD eviction timeout = 5m
 
 * Replication Controller:
-
     - Ensures the desired number of pod replicas are running at all times.
+* Deployment Controller:
+* Namespace Controller
+* Endpoint Controller
+
 
 #### cloud-controller-manager
 
@@ -92,6 +103,10 @@ There are three ways that a container manifest can be provided to the Kubelet
 #### kube-proxy (optional) 
 
 kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept.
+
+Service: Service can't join the pod network. This is virtual component that is listed in kubernetes memory. It is nothing like pod.
+
+Kube proxy looks for new services. When new service is created, kube proxy creates the appropriate rules on each node to forward traffic to those services to backend pods. It does with iptables rules. It creates the IPtables where rule is defined like forward traffic to service IP and from there to pod ip
 
 #### Container Runtime
 A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.

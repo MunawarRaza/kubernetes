@@ -115,6 +115,86 @@ Indicates whether the container is ready to respond to requests. If the readines
 Indicates whether the application within the container is started. All other probes are disabled if a startup probe is provided, until it succeeds. If the startup probe fails, the kubelet kills the container, and the container is subjected to its restart policy.
 
 
+## Questions
+### Basic understanding
+- What is a Pod?
+- Why does Kubernetes use Pods instead of containers directly?
+- Can a Pod contain multiple containers?
+- How do containers inside a pod communicate?
+- What is the lifecycle of a Pod?
+- What happens when a Pod crashes?
+- Are Pods permanent?
+
+### Scheduling & placement
+- How does Kubernetes schedule a Pod?
+- What is nodeSelector?
+- What are affinity and anti-affinity?
+- What are taints and tolerations?
+- How to force a Pod to run on a specific node?
+
+### Networking
+- Does each Pod get its own IP?
+- How do Pods communicate across nodes?
+- What is Pod networking model?
+- How to expose a Pod to outside world?
+
+### Storage
+- How to attach storage to a Pod?
+- What is an emptyDir volume?
+- What is a PersistentVolume?
+- How do Pods share data between containers?
+
+### Health checks
+
+What is liveness probe?
+What is readiness probe?
+What is startup probe?
+What happens when liveness fails?
+
+### Security
+- What is a ServiceAccount?
+- How to run a Pod as non-root?
+- What are security contexts?
+- How to restrict container capabilities?
+
+### Resource management
+
+- What are CPU/memory requests?
+- What are limits?
+- What happens when Pod exceeds memory limit?
+- What is OOMKilled?
+
+### Debugging
+
+- Why is my Pod in CrashLoopBackOff?
+- Why is Pod stuck in Pending state?
+- How to debug ImagePullBackOff?
+- How to debug ContainerCreating?
+### Troubleshooting checklist (real-world)
+- kubectl get pods
+- kubectl describe pod
+- kubectl logs
+- Check events
+- Check image pull
+- Check resource limits
+- Check node status
+- Check volumes
+- Check probes
+- Check network
+
+### Daily routine pod operations
+1. Check pod health
+2. Debug failing pods
+3. Restart pod
+4. Port forward to pod
+5. Copy files to/from pod
+6. Watch pod in real time
+7. Check pod resource usage
+8. Delete stuck pod
+9. View pod YAML
+
+
+
 any kubernetes yml file contains the following fields
 
 apiVersion:
