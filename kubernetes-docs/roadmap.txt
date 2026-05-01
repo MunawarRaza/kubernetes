@@ -106,3 +106,52 @@ Linux
                           └── storage
                                └── security
                                     └── production
+
+===================
+gitops-repo/
+├── argocd/                         # ArgoCD Management
+│   ├── applications/               # App-of-Apps manifests
+│   │   ├── dev/
+│   │   │   ├── app-of-apps.yaml    # Manages all dev services
+│   │   │   ├── service-a.yaml      # ArgoCD Application definition
+│   │   │   └── service-b.yaml
+│   │   ├── prod/
+│   │   │   └── root-app.yaml       # The "Bootstrap" app
+│   │   └── qa/
+│
+├── charts/                         # Reusable Blueprints
+│   └── microservice/               # Generic Helm chart for all services
+│       ├── templates/
+│       │   ├── _helpers.tpl
+│       │   ├── configmap.yaml
+│       │   ├── deployment.yaml     # Consumes values from environments/
+│       │   ├── hpa.yaml
+│       │   ├── ingress.yaml
+│       │   ├── pvc.yaml
+│       │   └── service.yaml
+│       ├── Chart.yaml
+│       └── values.yaml             # Default/Safe fallback values
+│
+├── environments/                   # Specific Configuration (The "State")
+│   ├── dev/
+│   │   ├── common.yaml             # Shared dev settings (DB URLs, etc.)
+│   │   ├── service-a.yaml          # Overrides for service-a (Dev-specific)
+│   │   └── service-b.yaml
+│   ├── prod/
+│   │   ├── service-a.yaml          # Overrides for service-a (Prod-specific)
+│   │   └── service-b.yaml
+│   └── qa/
+│
+├── global/                         # Cluster-wide Resources
+│   ├── common-values.yaml
+│   ├── image-pull-secret.yaml
+│   ├── namespace.yaml
+│   └── storageclass.yaml
+│
+├── infrastructure/                 # Core Add-ons
+│   ├── gateway/
+│   ├── ingress/
+│   ├── metallb/
+│   └── monitoring/
+│
+└── README.md
