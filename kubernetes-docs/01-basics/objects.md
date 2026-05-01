@@ -1,3 +1,13 @@
+# Table of Contents
+1. [Objects In Kubernetes](#Objects-In-Kubernetes)
+2. [What are the feature of EC2](#What-are-the-feature-of-EC2)
+3. [What are the related services of EC2](#What-are-the-related-services-of-EC2)
+4. [What are Instances Types](#What-are-Instances-Types)
+5. [What is the Naming Convention of Instance Type](#What-is-the-Naming-Convention-of-Instance-Type)
+6. [When to chose which instance type](#When-to-chose-which-instance-type)
+7. [How to Create EC2](#How-to-Create-EC2)
+8. [Owners and Dependents](###Owners-and-Dependents)
+
 ## Objects In Kubernetes
 Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster.
 Objects are sort of like blueprints. They provide detailed instructions to Kubernetes on how the applications must be set up and managed
