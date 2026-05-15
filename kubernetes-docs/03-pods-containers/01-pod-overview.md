@@ -137,18 +137,19 @@ If a Pod is scheduled to a node and that node then fails, the Pod is treated as 
 ### Scenerio 2
 when a container enters the crash loop, Kubernetes applies the exponential backoff delay mentioned in the Container restart policy. This mechanism prevents a faulty container from overwhelming the system with continuous failed start attempts.
 
+---
 ## Container restarts
-When a container in your Pod stops, or experiences failure, Kubernetes can restart it.
+When a container in the Pod stops, or experiences failure, Kubernetes can restart it.
 
-### Pod-level container restart policy
-The `spec` of a Pod has a `restartPolicy` field with possible values `Always`, `OnFailure`, and `Never`. The default value is Always.
+Pod restart the container on the basis of `restartPolicy` policy.
 
-#### Always: ####
-- Automatically restarts the container after any termination.
-#### OnFailure: ####
-- Only restarts the container if it exits with an error (non-zero exit status).
-#### Never: ####
-- Does not automatically restart the terminated container.
+`restartPolicy` has 3 values
+1. Always
+    - Automatically restarts the container after any termination.
+2. OnFailure
+    - Only restarts the container if it exits with an error (non-zero exit status).
+3. Never
+    - Does not automatically restart the terminated container.
 
 > **Note:**  
 >The restart behavior is particularly important when choosing between Deployments and Jobs:
@@ -156,12 +157,41 @@ The `spec` of a Pod has a `restartPolicy` field with possible values `Always`, `
 >- Jobs commonly use `restartPolicy: OnFailure` or `restartPolicy: Never` to handle batch processing tasks appropriately
 >- Sidecar containers are init containers that always restart regardless of the Pod's `restartPolicy` because they have their own container-level `restartPolicy: Always`
 
-### Containers Type and RestartPolicy
-The restartPolicy for a Pod applies to app containers in the Pod and to regular init containers.
+There are two levels to configure `restartPolicy`
+1. Container level
+2. Pod level
 
-For init containers that exit with an error, the kubelet restarts the init container if the Pod level restartPolicy is either OnFailure or Always
+### Container level restartPolicy
 
-Sidecar containers ignore the Pod-level restartPolicy field: in Kubernetes, a sidecar is defined as an entry inside initContainers that has its container-level restartPolicy set to Always
+If we configure the `restartPolicy` at container level, then policy will be applicable to only those containers not all. 
+
+For Example
+
+if there are 10 containers and we implement restartPolicy to only 5 containers then only that policy will be applicable for only those containers not for all.
+
+> **Note:**  
+>- Sidecar containers follow the restartPolicy at container level.
+>- Sidecar container always have `restartPolicy: Always'
+
+### Pod-level container restart policy
+
+If we configure the `restartPolicy` at pod level, then policy will be applicable to all containers.
+
+> **Note:**  
+>App or regular containers follow the pod-level
+
+#### Scenerio 1
+While the main application container follows the Pod's restartPolicy: OnFailure, the sidecar container will restart regardless of its exit code because sidecar containers always have restartPolicy: Always at the container level.
+
+### Container Restart Policy and Rule
+If your cluster has the feature gate `ContainerRestartRules` enabled, you can specify `restartPolicy` and `restartPolicyRules` on individual containers to override the Pod restart policy. Container restart policy and rules applies to app containers in the Pod and to regular init containers.
+
+Additionally, individual containers can specify `restartPolicyRules`. If the `restartPolicyRules` field is specified, then container `restartPolicy` <b>must</b> also be specified. The `restartPolicyRules` define a list of rules to apply on container exit. Each rule will consist of a <b>condition</b> and an <b>action</b>. The supported <b>condition</b> is `exitCodes`, which compares the exit code of the container with a list of given values. The supported <b>action</b> is Restart, which means the container will be restarted. The rules will be evaluated in order. On the first match, the action will be applied. If none of the rules’ conditions matched, Kubernetes fallback to container’s configured `restartPolicy`.
+
+
+### Reduced container restart delay
+
+---
 
 ## Container probes
 A probe is a diagnostic performed periodically by the kubelet on a container. To perform a diagnostic, the kubelet either executes code within the container, or makes a network request.
