@@ -3,45 +3,88 @@
 ## Container states
 
 ## Types of containers in pod
-1. Init container
-2. Sidecar container
+1. App container
+2. Init container
 3. Ephemeral container
-4. App container
+4. Sidecar container
 
+### 1. App Container
+These are the primary containers that run your business logic. Each pod can have one or more containers that run togather and share the resources like networking, storage etc
 
+- <b>Shared Network:</b> <i>Containers in the same pod share the same IP and Port</i>
+- <b>Shared Storage:</b> <i>They can mount the same volumes.</i>
+- <b>Shared Lifecycle:</b> <i>They are restarted togather if the pod restarts</i>
+
+Example
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-container
+spec:
+  containers:
+  - name: my-app
+    image: nginx
+    ports:
+    - containerPort: 80
+```
+---
 ### Init Container
-Init Container is specialized container that run before app container started in a Pod. Init container can contain utilities or setup scripts not present in an app image
+Init Container is specialized container that run before app container started in a Pod. 
+#### Used For:
+- Fetching configuration file
+- Performing database schema migrations
+- Waiting for dependencies to be ready
 
 Init containers are exactly like regular containers, except:
 - Init containers always run to completion.
 - Each init container must complete successfully before the next one starts.
 
-### Used for:
-- DB migrations
-- config setup
-- dependency checks
-
 If a Pod's init container fails, the kubelet repeatedly restarts that init container until it succeeds. However, if the Pod has a restartPolicy of Never, and an init container fails during startup of that Pod, Kubernetes treats the overall Pod as failed.
 
-### Difference Between init and regular container
-Like regular container, init container supports all the  fields and features of app containers, including resource limits, volumes, and security settings except `lifecycle`, `livenessProbe`, `readinessProbe`, or `startupProbe` fields.
-
-If there are multiple init containers, kubelet runs each init container sequentially. Each init container must succeed before the next can run.
-
-
+#### Key Charecteristics
+- <b>Sequencial Execution:</b> <i>Runs in order, one after the other.</i>
+- <b>No Restart after Completion:</b> <i>They never restart once successful.</i>
+- <b>Pod Fails if init Container fails:</b> <i>Ensure proper startup sequence.</i>
+- <b>Supported fields:</b> <i>The supports all the  fields and features of app containers, including resource limits, volumes, and security settings except `lifecycle`, `livenessProbe`, `readinessProbe`, or `startupProbe` fields.</i>
+---
 ### Sidecar Container
-Sidecar containers are the secondary containers that run along with the main application container within the same Pod. These containers are used to enhance or to extend the functionality of the primary app container by providing additional services, or functionality such as logging, monitoring, security, or data synchronization, without directly altering the primary application code.
+Sidecar containers are the secondary containers that run along with the main application container within the same Pod to provide supporting functionality.
+
+
+Previously Sidecar containers were used to defined under `containers` field. In newer version sidecar container is defined under the `initContainers` field with `restartPolicy: Always`. If `restartPolicy` field is not defined then it will not be sidecar container, it will be considered as init container
+
+
+Sidecar containers have their own independent lifecycles. They can be started, stopped, and restarted independently of app containers. This means you can update, scale, or maintain sidecar containers without affecting the primary application.
+
+#### Used for
+- <b>Logging Agent:</b> <i>Collects and ships logs.</i>
+- <b>Data synchronization:</b> <i>Sync content from a remote source </i>
+- <b>Monitoring:</b>
+- <b>Security:</b>
+
 
 Sidecar containers remain running after Pod startup. These can be started, stopped, or restarted without affecting the main application container and other init containers.
 
-Sidecar containers share the same network and storage namespaces with the primary container. This co-location allows them to interact closely and share resources.
-
-Sidecar containers support probe fields
-
-### Used for
-- logging agent
-- proxy
-- monitoring
+Example
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar-pod
+spec:
+  containers:
+  - name: main-app
+    image: my-app:latest
+  - name: log-collector
+    image: fluentd
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log
+  volumes:
+  - name: shared-logs
+    emptyDir: {}
+```
 
 ### Ephemeral Container
 A special type of container that runs temporarily in an existing Pod to accomplish user-initiated actions such as troubleshooting.
@@ -51,6 +94,15 @@ Sometimes it's necessary to inspect the state of an existing Pod, however, for e
 
 - Ephemeral containers may not have ports, so fields such as ports, livenessProbe, readinessProbe are disallowed.
 - Pod resource allocations are immutable, so setting resources is disallowed.
+
+---
+## Visual Overview
+Imagine a pod as small workspace with multiple collaborators
+- <b>Init Containers:</b> Prepare the workspace before anyone starts working
+- <b>Application Containers:</b> The main workers doing the actual job
+- <b>Sidecar Containers:</b> Helpers in the background (like logging assistants)
+- <b>Ephemeral Containers:</b> Temporary visitors who come in just for inspection
+
 
 ## Types of Deployment of pod
 1- imperative
