@@ -7,7 +7,7 @@ From container we can't see the process running on the host but from host we can
 
 Real time example
 
-Namespaces are just like rooms in the house. Each room is assigned to a child, where a child can't see what is happening in other rooms. However, as a parent, you have visibility of all the rooms in the house. If you wish, you can establish the connectivity between the other rooms
+Namespaces are just like rooms in the house. Each room is assing to a child, where a child can't see what is happening in other rooms. However, as a parent, you have visibility of all the rooms in the house. If you wish, you can establish the connectivity between the other rooms
 
 For each container there is a namespace which isolate this container from others.
 

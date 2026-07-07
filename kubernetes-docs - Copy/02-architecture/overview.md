@@ -7,15 +7,15 @@ A node is a machine – physical or virtual – on which kubernetesis installed.
 ## Cluster
 A cluster is a set of nodes grouped together.
 
-## Types of Nodes in K8s Cluster
+## Types of Nodes in Cluster
 There are tow types of nodes
 1. Master Node / Control Plan
 2. Worker Node
 
-## Master Node or Control Plane
+### Master Node or Control Plane
 The master is a node with Kubernetes installed in it, and is configured as a Master. The master watches over the nodes in the cluster and is responsible for the actual orchestration of containers on the worker nodes. Master node is called Control Plane
 
-## Worker Node
+### Worker Node
 A node where kubernetes components are installed and being managed by Master Node. On this Node, Master Node launches the Pods/Containers.
 
 ## Componenets of Kubernetes
@@ -47,54 +47,39 @@ There are 2 methods to deploy the kubeapi-server
 1. Manully with Binary
 2. Kubeadm
 
-<b>Manual Deployment</b>
-
 If we deploy with binary
-- Download the binary from the kubernetes page
-- Extract it
-- Configure /etc/systemd/system/kube-apiserver.service
-- Start with systemd service
-
-<b>View api-server-options - if inatalled manually</b>
-```
-cat /etc/systemd/system/kube-apiserver.service
-```
+- download the binary from the link
+- extract it
+- configure kube-apiserver.service
 
 <b>View api-server-options - if inatalled with kubeadm</b>
 ```
 cat /etc/kubernetes/manifests/kube-apiserver.yaml
 ```
 
-
+<b>View api-server-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-apiserver.service
+```
 #### ETCD
 
-ETCD is a distributed reliable key-value store used by kubernetesto to store all data used to manage the cluster.
+ETCD is a distributed reliable key-value store used by kubernetesto to store all data used to manage the cluster
 
 
-<b>Installing Methods of ETCD</b>
+<b> Deploy Manually </b>
+1. Download the Binary
 
-There are 2 methods to deploy the ETCD
-1. Manully with Binary
-2. Kubeadm
+2. Extract it 
 
-<b>Manual Deployment</b>
+3. Configure the service etcd.service in master node
 
-If we deploy with binary
-- Download the binary from the kubernetes page
-- Extract it
-- Configure /etc/systemd/system/etcd.service
-- Start with systemd service
+<b> Deploy with kubeadm </b>
 
-<b>View ETCD - if inatalled manually</b>
+if it is deployed with kubeadm we can check
+
 ```
-cat /etc/systemd/system/etcd.service
+kubectl get pod -n kube-system
 ```
-
-<b>View etcd-options - if inatalled with kubeadm</b>
-```
-cat /etc/kubernetes/manifests/etcd.yaml
-```
-
 To list the all keys 
 ```
 kubect exec pod etcd-master -n kube-system etcdctl get / --prefix --keys-only
@@ -122,7 +107,7 @@ etcd.service
 #### Schedulers
 The scheduler is responsible only to decide which pod will be going to which node. It does not create the pod. Kublet creates the pod.
 
-Scheduler try to find the best node for the pod based on the different obeservations
+Scheduler try to find the best node for the pod based 
 Scheduler go through the 2 phases
 
 1. Filter Nodes
@@ -134,46 +119,38 @@ Note:
 
 Factors taken into account for scheduling decisions include: individual and collective resource (cpu, memory, hard disk etc) requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, and deadlines
 
-<b>Installing Methods of kube-scheduler</b>
 
-There are 2 methods to deploy the kube-scheduler
+<b>Installing Methods of kube-api-server</b>
+There are 2 methods to deploy the kubeapi-server 
 1. Manully with Binary
 2. Kubeadm
 
-<b>Manual Deployment</b>
-
 If we deploy with binary
-- Download the binary from the kubernetes page
-- Extract it
-- Configure /etc/systemd/system/kube-scheduler.service
-- Start with systemd service
-
-<b>View kube-scheduler options - if inatalled manually</b>
-```
-cat /etc/systemd/system/kube-scheduler.service
-```
+- download the binary from the k8s page
+- extract it
+- configure kube-scheduler.service
 
 <b>View kube-scheduler-options - if inatalled with kubeadm</b>
 ```
 cat /etc/kubernetes/manifests/kube-scheduler.yaml
 ```
 
+<b>View kube-scheduler-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-scheduler.service
+```
 
 #### kube-controller-manager
 
 It runs multiple controller processes (like node, pod, and service controllers) in one binary to continuously monitor the cluster's actual state and ensure it matches the desired state defined by the user. 
 
-It just like a department where multiple teams are sitting and each team has specific responsibilites who monitor and manage their rutine tasks and take iimediate action to fix if they found any discrepance 
+e.g
 
+It constantly checks if the current state (e.g. 2 pods are running) matches the desired state (e.g., 3 pods requested).  If a container crashes, a node dies, or a service is deleted, the controller manager detects this discrepancy and takes immediate action to fix it.
 
 There are many different types of controllers. Some examples of them are:
 
 * Node controller: 
-  - It assignes a CIDR block to the node when it is registered
-  - Keep the Node's list up to date
-  - Monitoring the Node's health
-  - If Node becomes unreachable, node controller sets the Ready condition to Unknown
-  - If Node is unreachable, API-initiated evication is triggered to get the resources from all Pods
   - Responsible for noticing the state of the node.
   - If any new node is on boarding / any going down etc
   - Node Monitor Period = 5s 
@@ -192,28 +169,20 @@ There are many different types of controllers. Some examples of them are:
 * Service Account Controller
 * PV-Binding Controller
 
-<b>Installing Methods of kube-controller-manager</b>
+<b> Install the Controller Manually </b>
+1. Download the Binary from the k8s page
+2. Extract it
+3. Configure and run as a service kube-controller-manager.service
 
-There are 2 methods to deploy the controller-manager
-1. Manully with Binary
-2. Kubeadm
 
-<b>Manual Deployment</b>
-
-If we deploy with binary
-- Download the binary from the kubernetes page
-- Extract it
-- Configure /etc/systemd/system/kube-controller-manager.service
-- Start with systemd service
-
-<b>View kube-controller-manager options - if inatalled manually</b>
-```
-cat /etc/systemd/system/kube-controller-manager.service
-```
-
-<b>View kube-controller-manager-options - if inatalled with kubeadm</b>
+<b>View kube-controller-manager - if inatalled with kubeadm</b>
 ```
 cat /etc/kubernetes/manifests/kube-controller-manager.yaml
+```
+
+<b>View api-server-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-controller-manager.service
 ```
 
 #### cloud-controller-manager
@@ -242,24 +211,17 @@ There are three ways that a container manifest can be provided to the Kubelet
 2. File: Path is passed as a flag in command line
 3. Http Endpoint: HTTP endpoint passed as a parameter on the command line
 
+<b> Install the Controller Manually (This is not installed with kubeadm) </b>
+1. Download the Binary from the k8s page
+2. Extract it
+3. Configure and run as a service kubelet.service
 
-<b>Installing Methods of kubelet</b>
-
-This component is not installed with kubeadm, it only install manually
-
-<b>Manual Deployment</b>
-
-If we deploy with binary
-- Download the binary from the kubernetes page
-- Extract it
-- Configure /etc/systemd/system/kubelet.service
-- Start with systemd service
-
-<b>View kubelet options</b>
+<b>View kubelet-options</b>
 ```
 cat /usr/lib/systemd/system/kubelet.service
-ps -aux |grep kubelet
 ```
+
+ps -aux |grep kubelet
 
 #### kube-proxy (optional) 
 
@@ -281,8 +243,6 @@ kubeadm deploy this in each node as a daemonset
 #### Container Runtime
 A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.
 
----
-
 ## How worker Node is registered with kubernetes
 
 There are two main ways to have Nodes added to the API server:
@@ -300,16 +260,15 @@ A Node's status contains the following information:
 - Capacity and Allocatable
 - Info
 
-<b>1- Addresses</b>
-
+### Addresses
   - Hostname
   - External ip address: 
-    - Typically the IP address of the node that is externally routable (available from outside the cluster).
-  - Internal IP Address
-    - Typically the IP address of the node that is routable only within the cluster.
 
-<b>2- Conditions</b>
+      Typically the IP address of the node that is externally routable (available from outside the cluster).
+  - Internal IP Address:
 
+    Typically the IP address of the node that is routable only within the cluster.
+### Conditions
 The conditions field describes the status of all Running nodes
 - Ready --> True / False / Unknown (if the node controller has not heard from the node in the last node-monitor-grace-period (default is 50 seconds))
 - DiskPressure --> True / False
@@ -322,12 +281,10 @@ You can check condition of registered node with following command:
 kubectl describe node node_name
 ```
 
-<b>3- Capacity and Allocatable</b>
-
+### Capacity and Allocatable
 Describes the resources available on the node: CPU, memory, and the maximum number of pods that can be scheduled onto the node.
 
-<b>4- Info</b>
-
+### Info
 Describes general information about the node, such as 
 - OS Image
 - Operating System
@@ -344,7 +301,16 @@ For nodes there are two forms of heartbeats:
 - updates to the .status of a Node
 - Lease objects within the kube-node-lease namespace. Each Node has an associated Lease object.
 
----
+## Node Controller
+The node controller is a Kubernetes control plane component that manages various aspects of nodes.
+
+### Node Controller Tasks
+
+- It assignes a CIDR block to the node when it is registered
+- Keep the Node's list up to date
+- Monitoring the Node's health
+- If Node becomes unreachable, node controller sets the Ready condition to Unknown
+- If Node is unreachable, API-initiated evication is triggered to get the resources from all Pods
 
 ## Communication between Nodes and the Control Plane
 

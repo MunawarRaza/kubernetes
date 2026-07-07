@@ -21,9 +21,6 @@ It contains
 
 <b>dockershim:</b> When CRI was introudced, to continnue work/support with docker, kubernetes introudced dockershim. With dockershim, kuernetes was integrated with Docker only and with CRI kubernetes can work with any other runtime.
 
-
-
-
 ## Container states
 
 ## Types of containers in pod
