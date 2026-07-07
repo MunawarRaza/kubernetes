@@ -34,24 +34,111 @@ Note: Master or Control Plane Components can be installed on any machine of the 
 
 #### Kuber API Server
 The API server acts as the front-end for kubernetes that exposes the Kubernetes API. The users, management devices, Command line interfaces all talk to the API server to interact with the kubernetes cluster. The kube-apiserver is designed to scale horizontally, that is, it scales by deploying more instances
+
+It:
 1. Authenticate User
 2. Validate Request
 3. Retrive Data
 4. Update ETCD
 
+<b>Installing Methods of kube-api-server</b>
 
+There are 2 methods to deploy the kubeapi-server 
+1. Manully with Binary
+2. Kubeadm
+
+If we deploy with binary
+- download the binary from the link
+- extract it
+- configure kube-apiserver.service
+
+<b>View api-server-options - if inatalled with kubeadm</b>
+```
+cat /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+<b>View api-server-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-apiserver.service
+```
 #### ETCD
 
 ETCD is a distributed reliable key-value store used by kubernetesto to store all data used to manage the cluster
 
-#### Schedulers
 
-The scheduler is responsible for distributing work or pods across multiple nodes. It looks for newly created pod and assigns them to Nodes. The controllers makes decisions to bring up new pods in such cases.
-It only decides which pods going where. It did not create pod
+<b> Deploy Manually </b>
+1. Download the Binary
+
+2. Extract it 
+
+3. Configure the service etcd.service in master node
+
+<b> Deploy with kubeadm </b>
+
+if it is deployed with kubeadm we can check
+
+```
+kubectl get pod -n kube-system
+```
+To list the all keys 
+```
+kubect exec pod etcd-master -n kube-system etcdctl get / --prefix --keys-only
+```
+
+Kubernetes stores the data in specific directory
+```
+/registry
+    - minions
+    - pods
+    - replicasets
+    - deployments
+    - roles
+    - secrets
+```
+
+<b> Etcd in HA </b>
+
+if we have etcd in multiple instances then we have to configure the etcd.service in such a way that everyone knows each other. below parameter is used
+etcd.service
+```
+--initial-cluster controller-0=https://{controller0_IP}:2280,controller-1=https://{controller1_ip}:2280 \\
+```
+
+#### Schedulers
+The scheduler is responsible only to decide which pod will be going to which node. It does not create the pod. Kublet creates the pod.
+
+Scheduler try to find the best node for the pod based 
+Scheduler go through the 2 phases
+
+1. Filter Nodes
+  - It tries to filter the nodes which do not fit for the newly upcoming pod and remove them from the list
+2. Ranks Nodes
+  - It uses the priority functions to assign score from 0-10. The scheduler calculates the ammount of resources that would be free after the placing the pod on them.
 
 Note:
 
 Factors taken into account for scheduling decisions include: individual and collective resource (cpu, memory, hard disk etc) requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, and deadlines
+
+
+<b>Installing Methods of kube-api-server</b>
+There are 2 methods to deploy the kubeapi-server 
+1. Manully with Binary
+2. Kubeadm
+
+If we deploy with binary
+- download the binary from the k8s page
+- extract it
+- configure kube-scheduler.service
+
+<b>View kube-scheduler-options - if inatalled with kubeadm</b>
+```
+cat /etc/kubernetes/manifests/kube-scheduler.yaml
+```
+
+<b>View kube-scheduler-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-scheduler.service
+```
 
 #### kube-controller-manager
 
@@ -64,17 +151,39 @@ It constantly checks if the current state (e.g. 2 pods are running) matches the 
 There are many different types of controllers. Some examples of them are:
 
 * Node controller: 
-  - Responsible for noticing and responding when nodes go down.
-  - Node Monitor Period = 5s
-  - Node Monitor Grace Period = 40s
-  - POD eviction timeout = 5m
+  - Responsible for noticing the state of the node.
+  - If any new node is on boarding / any going down etc
+  - Node Monitor Period = 5s 
+    - monitor each node after 5s
+  - Node Monitor Grace Period = 40s 
+    - wait for 40s before mark it unreachable
+  - POD eviction timeout = 5m 
+    - if a node is unreachable, it got 5m to come backup, if does't comeback, node controller removes the pod from it and assigns them to healthy node
 
 * Replication Controller:
-    - Ensures the desired number of pod replicas are running at all times.
+    - monitors the replication and ensures the desired number of pod are running at all times.
 * Deployment Controller:
 * Namespace Controller
 * Endpoint Controller
+* Cronjob Controller
+* Service Account Controller
+* PV-Binding Controller
 
+<b> Install the Controller Manually </b>
+1. Download the Binary from the k8s page
+2. Extract it
+3. Configure and run as a service kube-controller-manager.service
+
+
+<b>View kube-controller-manager - if inatalled with kubeadm</b>
+```
+cat /etc/kubernetes/manifests/kube-controller-manager.yaml
+```
+
+<b>View api-server-options - if inatalled manually</b>
+```
+cat /etc/systemd/system/kube-controller-manager.service
+```
 
 #### cloud-controller-manager
 
@@ -91,6 +200,8 @@ Worker Node Components:
 #### kubelet
 An agent that runs on each node in the cluster. It makes sure that containers are running in a Pod.
 
+It listens the instructions from kube api server and create / destroy the containers based on the instructions. It also send back the report to kube api server if anything happens to containers on its node.
+
 Kubelet's tasks:
 - Register the node with API Server using one of: the hostname, a flag to override the hostname, specific logic for cloud provider
 - The kubelet takes a set of PodSpecs that are provided through various mechanisms (primarily through the apiserver) and ensures that the containers described in those PodSpecs are running and healthy.
@@ -100,13 +211,34 @@ There are three ways that a container manifest can be provided to the Kubelet
 2. File: Path is passed as a flag in command line
 3. Http Endpoint: HTTP endpoint passed as a parameter on the command line
 
+<b> Install the Controller Manually (This is not installed with kubeadm) </b>
+1. Download the Binary from the k8s page
+2. Extract it
+3. Configure and run as a service kubelet.service
+
+<b>View kubelet-options</b>
+```
+cat /usr/lib/systemd/system/kubelet.service
+```
+
+ps -aux |grep kubelet
+
 #### kube-proxy (optional) 
+
+In kubernetes every pod can reach to everyother pod. This can only happen with pod networking solution in the cluster
 
 kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept.
 
 Service: Service can't join the pod network. This is virtual component that is listed in kubernetes memory. It is nothing like pod.
 
 Kube proxy looks for new services. When new service is created, kube proxy creates the appropriate rules on each node to forward traffic to those services to backend pods. It does with iptables rules. It creates the IPtables where rule is defined like forward traffic to service IP and from there to pod ip
+
+<b> Install the kube-proxy Manually </b>
+1. Download the Binary from the k8s page
+2. Extract it
+3. Configure and run as a service kube-proxy.service
+
+kubeadm deploy this in each node as a daemonset
 
 #### Container Runtime
 A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.

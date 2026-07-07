@@ -1,5 +1,26 @@
 ## What is Container
 
+## Difference between containerd and docker
+
+
+<b>containerd:</b> Docker is not just a container runtime, it consists of multiple tools that are put togather like CLI, API, AUTH, BUILD (support building images), VOLUMES, SECURITY and runc (container runtime). The daemon that manages runc is called containerd
+
+<b>CRI:</b>
+
+CRI was introduced by kubernetes so that kubernetes can work with any container run time like rkt, cri
+
+<b>OCI:</b> Open Container Initiative
+
+It contains 
+- imagespec
+- runtimespec
+
+<b>Imagespec</b> means the specification, how an image should be built
+
+<b>Runtimespec</b> defines how any container runtime should be developed
+
+<b>dockershim:</b> When CRI was introudced, to continnue work/support with docker, kubernetes introudced dockershim. With dockershim, kuernetes was integrated with Docker only and with CRI kubernetes can work with any other runtime.
+
 ## Container states
 
 ## Types of containers in pod

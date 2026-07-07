@@ -57,29 +57,29 @@ Deployments are one of the most commonly used Kubernetes workloads, particularly
 - <b>Use Case:</b> Web applications, APIs, or any stateless services where scalability and flexibility are essential.
 - <b>Key Features: </b>Deployments support declarative updates, meaning you define the desired state, and Kubernetes aligns the current state to match. Deployments are also self-healing, automatically restarting failed pods to maintain the specified number of replicas.
 
-### 6. ReplicaSet
+### 2. ReplicaSet
 A ReplicaSet maintains a stable number of pod replicas running at any given time. While similar to Deployments, ReplicaSets lack the advanced features for declarative updates and rollbacks. Instead, they are typically used under the hood by Deployments to ensure the specified number of pod replicas.
 - <b>Use Case:</b> ReplicaSets are usually part of a Deployment. However, they can also be used directly for custom scenarios that require precise control over replica count without the need for rolling updates.
 - <b>Key Features: </b>ReplicaSets are self-healing, maintaining the specified number of replicas by replacing any failed pods. They’re simple yet reliable, but are typically used as part of a larger Deployment resource.
 
-### 2. StatefulSet
+### 3. StatefulSet
 For applications that require persistent identity and stable storage across restarts. StatefulSets are designed for stateful applications where each instance of the application requires a unique identity, consistent storage, and ordered scaling or updates.
 - <b>Use Case:</b> Databases like MySQL, Cassandra, and distributed systems that rely on stable storage and networking.
 - <b>Key Features: </b>StatefulSets provide stable, unique network identifiers for each pod, such as sequential naming (e.g., `my-app-0`, `my-app-1`). They also use persistent volumes to retain data even if a pod is rescheduled or restarted, ensuring data continuity across sessions.
 
-### 3. DaemonSet
+### 4. DaemonSet
 A DaemonSet ensures that a particular pod runs on every node (or a subset of nodes) within the cluster. DaemonSets are essential for workloads that need to run a single instance on each node, such as monitoring agents or logging daemons.
 
 - <b>Use Case:</b> System-level monitoring tools like Prometheus Node Exporter, log collectors like Fluentd, and other node-specific services.
 - <b>Key Features: </b> DaemonSets automatically schedule pods on each node as it is added to the cluster, and they delete pods from nodes when those nodes are removed. This setup ensures that critical services have node-level coverage without manual intervention.
 
-### 4. Job
+### 5. Job
 Jobs in Kubernetes are designed for tasks that need to run once and then terminate. Jobs ensure that a specified number of pod replicas complete successfully and are automatically deleted upon completion. This workload type is suited for single-run tasks, such as data processing, batch jobs, or database migrations.
 
 - <b>Use Case:</b> One-time data processing, report generation, and any task requiring guaranteed execution without continuous running.
 - <b>Key Features: </b> Jobs can be configured to retry on failure, so if a pod fails, Kubernetes will launch a new one until the task completes. This retry mechanism is essential for high-reliability tasks where successful completion is required.
 
-### 5. CronJob
+### 6. CronJob
 CronJobs build on the Job workload, adding the ability to schedule Jobs at specific intervals. Similar to cron jobs on Unix-like systems, Kubernetes CronJobs are designed for periodic tasks that need to run at fixed times or intervals.
 
 - <b>Use Case:</b> Scheduled database backups, log rotation, cache clearing, and any recurring task.
