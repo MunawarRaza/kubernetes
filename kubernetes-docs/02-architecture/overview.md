@@ -354,6 +354,16 @@ New
 ```
 This updated EndpointSlice is written back to the `API Server`, which stores it in `etcd`.
 
+Suppose a new service is created with selector `app: frontend`. The EndpointSlice Controller looks the selector `(e.g app=frontend)`, find the matching pods `(Pod-1  app=frontend, Pod-2  app=frontend, Pod-3  app=frontend)` whose lable match to this service selector and create an EndpointSlice 
+```
+Service: frontend
+
+Endpoints:
+10.244.0.2
+10.244.0.3
+10.244.0.4
+```
+
 <b>Step 4: kube-proxy is watching the API Server</b>
 
 kube-proxy has a watch open to the API Server. It immediately receives the updated EndpointSlice.
@@ -364,6 +374,46 @@ API Server
       |
 kube-proxy
 ```
+It receives something like:
+```
+Service
+-------
+ClusterIP = 10.96.0.20
+
+Endpoints
+---------
+10.244.0.2
+10.244.0.3
+10.244.0.4
+```
+
+When a packet arrives:
+
+Suppose a packet arrives:
+```
+Source      : 10.244.1.5
+Destination : 10.96.0.20
+```
+kube-proxy thinks: `"The destination is a Service IP."`
+It then:
+1. Looks up 10.96.0.20.
+2. Finds its backend Pods:
+```
+10.244.0.2
+10.244.0.3
+10.244.0.4
+```
+3. Chooses one (for example, 10.244.0.3).
+4. Performs DNAT:
+```
+Destination:
+10.96.0.20
+
+↓
+
+10.244.0.3
+```
+5. Forwards the packet to Pod-2.
 
 <b>Step 5: kube-proxy updates networking rules</b>
 
