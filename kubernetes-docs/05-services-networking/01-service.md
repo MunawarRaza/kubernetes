@@ -56,16 +56,62 @@ spec:
 ```
 
 
-Types of Services:
-NodePort
-ClusterIP
-    Service creates the virtual IP inside the cluster
-LoadBalancer
+<b>Types of Services:</b>
+- ClusterIP
+- NodePort
+- LoadBalancer
 
-#### NodePort
-Service recives the traffic on its service port and forward it to pod's port which is called targetport
+<b> ClusterIP (Default)</b>
 
-Exposes the Service on each Node's IP at a static port (the NodePort). To make the node port available, Kubernetes sets up a cluster IP address
+The default service type is `ClusterIP`. This allows a service to be accessed within the cluster via a virtual IP address,
+known as the service Cluster IP. The Cluster IP for a service is discoverable through Kubernetes DNS.
+
+Here kube-proxy:
+- intercept the request 
+- DNAT 
+- chose the pod to forward the traffic
+
+<b> NodePort</b>
+
+The most basic way to access a service from outside the cluster is to use a service of type `NodePort`. A Node Port is a port reserved on each node in the cluster through which the service can be accessed. 
+
+Here kube-proxy:
+- intercept the request 
+- DNAT
+  - in DNAT, Node's IP is mapped with Service POD's IP
+- SNAT (Source NAT)
+  - in SNAT, source/Client IP is mapped with Node IP and when pod receives the traffic, it sees source IP as the Node Port. This ensures the reply comes back through the same node.
+- chose the pod to forward the traffic
+
+
+Complete Flow:
+```
+                 Client
+          203.0.113.20
+                |
+                |
+                v
+      Node-1 (192.168.1.101)
+          NodePort 30080
+                |
+         kube-proxy intercepts
+                |
+       Chooses one backend Pod
+                |
+      DNAT: 192.168.1.101:30080
+                ↓
+        10.244.0.3:8080
+                |
+             Pod-2
+                |
+           Response
+                |
+      Reverse NAT on Node-1
+                |
+             Client
+```
+
+Definition:
 
 ```
 ports:
@@ -102,10 +148,34 @@ spec:
 Note:
 If pods are distributed on different Nodes, service is created for all the Nodes and we can access the application with IP of any Node and port we configured in our manifist file
 
-#### ClusterIP (Default)
-Exposes the Service on a cluster-internal IP. Choosing this value makes the Service only reachable from within the cluster. This is the default that is used if you don't explicitly specify a type for a Service.
+<b>LoadBalancer</b>
 
-#### LoadBalancer
-Exposes the Service externally using an external load balancer. 
+Services of type LoadBalancer expose the service via an external network load balancer (NLB). The service can be accessed from outside of the cluster via a specific IP address on the network load balancer, which
+by default will load balance evenly across the nodes using the service node port. 
 
-#### ExternalName
+<b>Advertising service IPs</b>
+One alternative to using node ports or network load balancers is to advertise service IP addresses over BGP.
+
+In this our office router knows our kubernetes cluster. In this we tells our office router that if anyone wants to access the our kubernetes cluster, just send the traffic to our k8s cluster ip.
+
+BGP allows Kubernetes to advertise Service IPs (ClusterIPs or ExternalIPs) directly to the network routers. Instead of accessing applications through a NodePort or cloud LoadBalancer, routers learn the route to the Service IP and send traffic directly to the Kubernetes cluster. Calico provides this capability when used as the CNI, while MetalLB offers similar functionality for clusters using other CNIs such as Flannel or Cilium.
+
+Complete Flow:
+```
+             Client
+                |
+                |
+         Top-of-Rack Router
+                |
+     Learns via BGP that
+     10.96.0.20 belongs
+     to Kubernetes
+                |
+         Kubernetes Cluster
+                |
+           kube-proxy
+                |
+            Service
+                |
+              Pods
+```
