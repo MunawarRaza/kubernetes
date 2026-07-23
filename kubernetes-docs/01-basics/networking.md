@@ -23,6 +23,10 @@ Same for container, when a container is created, a namespace is also created wit
 - Routing table
 - ARP table
 
+ARP table is created when we access or ping to other ip, if ping is success then it gets its mac address otherwise it shows as incomplete.
+
+We can check 'arp -n' commnad
+
 ## How to create namespaces, How to create virtual network, how to assign ip addresses to namesapaces, and how to make connectivity
 
 Points:

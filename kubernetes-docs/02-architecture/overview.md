@@ -261,15 +261,157 @@ cat /usr/lib/systemd/system/kubelet.service
 ps -aux |grep kubelet
 ```
 
-#### kube-proxy (optional) 
+#### kube-proxy
 
 In kubernetes every pod can reach to everyother pod. This can only happen with pod networking solution in the cluster
 
 kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept.
 
-Service: Service can't join the pod network. This is virtual component that is listed in kubernetes memory. It is nothing like pod.
+Consider kube-proxy as the traffic manager. Let's explain here.
+First we have to understand the service in kubernetes. 
 
-Kube proxy looks for new services. When new service is created, kube proxy creates the appropriate rules on each node to forward traffic to those services to backend pods. It does with iptables rules. It creates the IPtables where rule is defined like forward traffic to service IP and from there to pod ip
+<b>Service: </b> A Kubernetes Service is a stable network endpoint that provides access to a group of pods. It finds those pods using label selectors and automatically load-balances traffic among them. This is virtual component that is listed in kubernetes memory. It is nothing like pod. Service registers the pods whose lables are matching with service configurations.
+
+Kube-proxy keeps the IPs of service and pods behind that service.
+
+Suppose we have frontend pod and multiple pods of backend. Frontend has to communicate with backend but pod is ephemeral and can be destroyed at anytime. If a pod destroyed and recreated, then its IP will be changed and this time frontend will not be able to communicate with backend pod. To solve this problem service comes into the picture, Service is the virtual component who has a stable IP and Name. Service can be accessible via its IP or Name. All the backends pod will be behind this service. Now frontend does not need to communicate directly to the pod. Frontend sends the request to service and kube-proxy intercept that request, DNAT(Destination Network Address Translation) means change the destination IP from service to pod and decides on which pod this request should go.
+
+Imagine calling a company's customer support number.
+```
+You
+ |
+ | Call 1111
+ |
+Customer Support Number
+ |
+Operator
+ |
+-----------------------
+|         |           |
+Agent1   Agent2     Agent3
+```
+
+- The customer support number is the Service (ClusterIP).
+- The operator is kube-proxy.
+- The agents are the Pods.
+
+You always dial the same number. The operator decides which agent answers your call. If one agent is unavailable, another answers, and you don't need to know who it is.
+
+<b>How does kube-proxy know the new IP of service/pod? </b>
+
+<b>Step 1: A new Pod is created</b>
+
+```
+Pod created
+      |
+      v
+Scheduler assigns it to a node
+      |
+      v
+kubelet starts the Pod
+      |
+      v
+CNI assigns Pod IP
+
+For Example:
+Pod-4
+IP = 10.244.1.8
+Labels:
+app=frontend
+```
+<b>Step 2: API Server stores the Pod</b>
+
+The kubelet updates the Pod status (including its IP) through the API Server. The API Server stores the Pod object in etcd.
+
+<b>Step 3: EndpointSlice Controller notices the new Pod</b>
+
+The EndpointSlice Controller (running inside `kube-controller-manager`) watches:
+
+- Pods
+- Services
+
+It sees:
+- A new Pod exists.
+- The Pod `label app=frontend` matches the Service selector.
+
+So it updates the EndpointSlice.
+
+```
+EndpointSlice
+
+Old
+----
+10.244.0.2
+10.244.0.3
+
+↓
+
+New
+----
+10.244.0.2
+10.244.0.3
+10.244.1.8
+```
+This updated EndpointSlice is written back to the `API Server`, which stores it in `etcd`.
+
+<b>Step 4: kube-proxy is watching the API Server</b>
+
+kube-proxy has a watch open to the API Server. It immediately receives the updated EndpointSlice.
+```
+API Server
+      |
+      | Watch Event
+      |
+kube-proxy
+```
+
+<b>Step 5: kube-proxy updates networking rules</b>
+
+kube-proxy updates `iptables/IPVS/nftables` to include the new Pod IP.
+
+Now traffic can be sent to:
+```
+10.244.0.2
+10.244.0.3
+10.244.1.8
+```
+
+<b>Complete Flow</b>
+
+```
+Pod Created
+      |
+      v
+CNI assigns Pod IP
+      |
+      v
+kubelet updates Pod Status
+      |
+      v
+API Server
+      |
+      v
+etcd
+
+      ↑
+EndpointSlice Controller watches Pods & Services
+      |
+Updates EndpointSlice
+      |
+      v
+API Server
+      |
+      v
+etcd
+
+      ↑
+kube-proxy watches EndpointSlices
+      |
+Updates iptables/IPVS rules
+      |
+Traffic starts reaching new Pod
+```
+
 
 <b> Install the kube-proxy Manually </b>
 1. Download the Binary from the k8s page
@@ -277,6 +419,7 @@ Kube proxy looks for new services. When new service is created, kube proxy creat
 3. Configure and run as a service kube-proxy.service
 
 kubeadm deploy this in each node as a daemonset
+
 
 #### Container Runtime
 A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.
