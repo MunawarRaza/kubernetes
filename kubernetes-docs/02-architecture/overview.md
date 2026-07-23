@@ -412,6 +412,8 @@ Updates iptables/IPVS rules
 Traffic starts reaching new Pod
 ```
 
+When a new Pod is created and receives an IP address from the CNI, the kubelet reports the Pod status (including the IP) to the API Server. The EndpointSlice Controller watches Pods and Services, updates the corresponding EndpointSlice resource with the new Pod IP, and stores it via the API Server in etcd. kube-proxy watches the API Server for EndpointSlice changes and updates the node's networking rules accordingly.
+
 
 <b> Install the kube-proxy Manually </b>
 1. Download the Binary from the k8s page
