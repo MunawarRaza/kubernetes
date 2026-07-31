@@ -473,6 +473,36 @@ When a new Pod is created and receives an IP address from the CNI, the kubelet r
 kubeadm deploy this in each node as a daemonset
 
 
+Most importent concept:
+
+when a pod is created, IP assigned by CNI, when a service is created then IP assigned by kubernetes
+
+For both Pods and service, CIDR will be different. For Example
+
+```
+Node Network
+
+10.10.10.0/24
+
+Pod Network
+
+192.168.0.0/16
+
+Service Network
+
+10.96.0.0/12
+```
+
+You can choose any private, non-overlapping RFC1918 range that does not conflict with your existing infrastructure.
+
+RFC1918 private ranges are:
+
+```
+10.0.0.0/8
+172.16.0.0/12
+192.168.0.0/16
+```
+
 #### Container Runtime
 A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.
 

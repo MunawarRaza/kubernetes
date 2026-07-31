@@ -1,0 +1,305 @@
+containerd
+runc
+cni plugins (containernetworking/plugins) → /opt/cni/bin)
+Calico (or Flannel, Cilium, etc.)
+Point 1. ====
+Step 1: Installing containerd
+	wget https://github.com/containerd/containerd/releases/download/v2.3.3/containerd-2.3.3-linux-amd64.tar.gz
+	cd /usr/local/
+	sudo cp /opt/containerd-2.3.3-linux-amd64.tar.gz .
+	tar xzvf containerd-2.3.3-linux-amd64.tar.gz
+
+	# systemd
+	wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+	sudo mv containerd.service /etc/systemd/system/
+	sudo systemctl daemon-reload
+	sudo setenforce 0
+	
+	# check file architecture if face issue to start the containerd service
+	sudo file /usr/local/bin/containerd
+
+
+Step 2: Installing runc
+
+	sudo wget https://github.com/opencontainers/runc/releases/download/v1.5.1/runc.amd64
+	sudo install -m 755 runc.amd64 /usr/local/sbin/runc
+	
+Step 3: Installing CNI plugins
+	sudo wget https://github.com/containernetworking/plugins/releases/download/v1.9.1/cni-plugins-linux-amd64-v1.9.1.tgz
+	sudo mkdir -p /opt/cni/bin
+	sudo mv cni-plugins-linux-amd64-v1.9.1.tgz /opt/cni/bin/
+	cd /opt/cni/bin/
+	sudo tar xzvf cni-plugins-linux-amd64-v1.9.1.tgz
+
+Point 2. ====
+1. Configure containerd
+	1. Configure systemd driver in containerd
+		sudo mkdir -p /etc/containerd
+		containerd config default | sudo tee /etc/containerd/config.toml
+	2. Enable SystemdCgroup
+		sudo vi /etc/containerd/config.toml
+		# find
+			SystemdCgroup = false
+		# Change it to:
+			SystemdCgroup = true
+	3. Restart containerd:
+		sudo systemctl restart containerd
+
+2 Disable swap
+	sudo swapoff -a	
+
+3. Load required kernel modules
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+	sudo modprobe overlay
+	sudo modprobe br_netfilter
+
+	Note:
+		- /etc/modules-load.d/k8s.conf this file tells linux "Whenever the system boots, automatically load these kernel modules."
+		- A kernel module is like a plugin for the Linux kernel. Instead of compiling every feature into the kernel, Linux can load functionality only when it's needed.
+		Module 1: overlay
+		- modprobe overlay --> This loads the Overlay Filesystem driver.
+			Container runtimes (containerd, Docker, CRI-O) don't create a full copy of an image for every container. Instead, they use layered filesystems. Suppose an Ubuntu image contains:
+			/
+			├── bin
+			├── etc
+			├── lib
+			When you create 100 containers, containerd doesn't duplicate the entire filesystem 100 times. Instead, it uses:
+				Read-only Image Layer
+						+
+				Writable Container Layer
+						=
+				Merged Filesystem
+			This is implemented by OverlayFS. This module is required by containerd's default overlayfs snapshotter.
+		Example:
+			Lower Layer (Image)
+			-------------------
+			/etc/passwd
+			
+			Upper Layer (Container)
+			-----------------------
+			/tmp/file.txt
+			
+			Merged View
+			-----------------------
+			/etc/passwd
+			/tmp/file.txt
+		Module 2: br_netfilter
+		- modprobe br_netfilter --> This one is more Kubernetes-specific.
+		- Imagine two Pods on the same node.
+			Pod A
+			│
+			│
+			Linux Bridge (cni0)
+			│
+			│
+			Pod B
+		Traffic flows through a Linux bridge. Without br_netfilter, packets crossing the bridge bypass those rules. Normally, Linux does not send bridged traffic through iptables. That becomes a problem because Kubernetes relies heavily on iptables (or nftables via compatibility) for:
+			Services
+			Network Policies
+			kube-proxy rules
+			CNI plugins
+			
+		Loading this module allows bridged traffic to be inspected by the firewall framework, enabling Kubernetes networking features to work correctly.
+
+4. Configure sysctl
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+net.ipv4.ip_forward=1
+EOF
+
+	sudo sysctl --system
+	
+	Note:
+	- sysctl changes Linux kernel parameters at runtime. You can check active and inactive with sysctl -a
+	- Linux can behave in two ways to route the traffic. 
+		1. Host mode (default)
+			Packet arrives --> Destination = this machine --> Accept
+			or
+			Packet arrives --> Destination = another machine --> Drop
+			Linux does not forward packets by default.
+		2. Router mode 
+			- when we enable net.ipv4.ip_forward=1
+				- Linux becomes capable of forwarding packets. 
+				- Packet arrives --> Destination somewhere else --> Forward it
+				  This is exactly what Kubernetes nodes do.
+				- The node must forward packets between interfaces. Without IP forwarding, inter-pod communication across nodes would fail.
+			
+			net.bridge.bridge-nf-call-iptables = 1 
+				- This works together with the br_netfilter module. It tells Linux: "When packets cross a bridge, pass them through iptables."
+				- Without it Pod A --> Bridge --> Node B --> iptables never sees packet
+				- Withit Pod A --> Bridge --> iptables --> Pod B
+				- This enables Service load balancing and many CNI features.
+
+Why we need point 4 and 5
+
+		For that packet to succeed:
+		
+		1. The container filesystem needs OverlayFS (overlay).
+		2. Bridged packets must be visible to firewall rules (br_netfilter).
+		3. Bridged packets must actually be sent through iptables (bridge-nf-call-iptables / bridge-nf-call-ip6tables).
+		4. The node must forward packets between interfaces (ip_forward).
+		
+		If any of these pieces are missing, you can encounter issues such as:
+		
+		1. Pods on different nodes cannot communicate.
+		2. Kubernetes Services fail to route traffic correctly.
+		3. NetworkPolicies are not enforced as expected.
+		4. Container runtimes cannot use the default OverlayFS storage driver efficiently.
+
+5. Verify the CRI socket
+
+kubeadm
+kubelet
+kubectl
+
+Point 3. ====
+1. Set SELinux to permissive mode:
+	# Set SELinux in permissive mode (effectively disabling it)
+	sudo setenforce 0
+	sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+2. add repo
+	# This overwrites any existing configuration in /etc/yum.repos.d/kubernetes.repo
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.36/rpm/repodata/repomd.xml.key
+exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+EOF
+
+3. Install kubelet, kubeadm and kubectl:
+	sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+		here --disableexcludes=kubernetes means don't update the kubeadm kubelet and kubectl when we execute yum update command
+
+4. (Optional) Enable the kubelet service before running kubeadm:
+	sudo systemctl enable --now kubelet
+	
+	Note:
+	The kubelet is now restarting every few seconds, as it waits in a crashloop for kubeadm to tell it what to do.
+
+Point 4. ====
+
+# Initialize
+kubeadm init [flags]
+
+Options
+	--apiserver-advertise-address string (10.130.21.31)
+	--apiserver-bind-port int32     Default: 6443
+	--control-plane-endpoint string
+	--pod-network-cidr string (10.95.0.0/16)
+	--service-cidr string     Default: "10.96.0.0/12" (10.96.0.0/16)
+	-service-dns-domain string     Default: "cluster.local"
+
+
+	Note:
+		- --apiserver-advertise-address --> The IP address of the control plane node that the kube-apiserver advertises to other Kubernetes components (kubelets, controller-manager, scheduler, etc.). This should be the IP address of the network interface through which other nodes can reach the control plane.
+		- --pod-network-cidr string --> The CIDR block from which the CNI plugin allocates IP addresses to Pods.
+		- --service-cidr string --> The CIDR block from which Kubernetes allocates virtual ClusterIP addresses to Services.
+	
+		For --pod-network-cidr and --service-cidr, you can choose almost any valid private CIDR block, provided it does not overlap with each other or with any existing networks (such as your node network, corporate LAN, VPN, or other routed networks). Also ensure the chosen Pod CIDR is compatible with your CNI plugin's configuration.
+https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/
+
+
+Point 4. ====
+Step 1: Initialize the cluster
+  kubeadm init --apiserver-advertise-address 10.130.21.31 --pod-network-cidr 10.95.0.0/16 --service-cidr 10.96.0.0/16
+
+Step 2: Configure kubectl
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+  # Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+  # kubectl get nodes
+
+    NAME        STATUS     ROLES           AGE
+    master      NotReady   control-plane   2m
+    
+    Note: NotReady is expected because no CNI is installed yet.
+
+Point 5. ====
+Step 1: Install the Calico Operator
+	# Install the operator:
+	kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.32.1/manifests/tigera-operator.yaml
+	
+	# Install the CRDs:
+	kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.32.1/manifests/operator-crds.yaml
+
+Step 2: Download the Installation manifest
+	wget https://raw.githubusercontent.com/projectcalico/calico/v3.32.1/manifests/custom-resources.yaml
+
+Step 3: Change the Pod CIDR
+	vi custom-resources.yaml
+		Find: 
+			cidr: 192.168.0.0/16
+		Change only:
+			cidr: 10.95.0.0/16  (this is the pod network which we given with kube init command)
+
+Step 4: Install Calico
+	kubectl apply -f custom-resources.yaml
+
+Step 5: Wait for Pods
+	watch kubectl get pods -A
+	once all the pods are up and running then verify the Node too
+		kubectl get node
+			NAME                 STATUS   ROLES           AGE   VERSION
+			ol-k8-master-21.31   Ready    control-plane   37m   v1.36.3
+
+
+Step 6: Verification
+	1. Pod will be verified when other node will be joined
+	2. To verify service
+		kubectl get svc
+			NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+			kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   41m
+
+
+Note: 
+	here tigera is the company who created calico.
+	operator is required because it acts as controller just like k8s controllers. it only manages calico resources
+
+Point 6. ====
+To Join the worker node with master
+
+1. On Worker Nodes
+	swappoff
+	selinux disabled
+	install containerd, runc, cni plugins 
+	configure systemd driver in containerd as did above
+	configure modules (overlay, br_netfilter and sysctl)
+	install kubeadm, kubectl, kubelet as did above
+
+2. Join with following command
+kubeadm join 10.130.21.31:6443 --token wapi7q.q4x2g5n9p453v2bl \
+        --discovery-token-ca-cert-hash sha256:ed04012ed6b848b572061456e0083eae2ae18356f9a782f50f3543962576c877 
+		
+		Note: this command was generated with we executed kubeadm init command on master/control plan node
+		
+		If token forgotten or expired then use below command on control plan and then execute join command on worker node
+		kubeadm token create --print-join-command
+			output
+				kubeadm join 10.130.21.31:6443 --token jld7ry.dvfcmca431jp7prr --discovery-token-ca-cert-hash sha256:ed04012ed6b848b572061456e0083eae2ae18356f9a782f50f3543962576c877
+		execute this command on worker node 
+		
+
+====
+VERSION=v1.34.0
+wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${VERSION}/crictl-${VERSION}-linux-amd64.tar.gz
+sudo tar -C /usr/local/bin -xzf crictl-${VERSION}-linux-amd64.tar.gz
+sudo chmod +x /usr/local/bin/crictl
+sudo tee /etc/crictl.yaml <<EOF
+runtime-endpoint: unix:///run/containerd/containerd.sock
+image-endpoint: unix:///run/containerd/containerd.sock
+timeout: 10
+debug: false
+EOF
