@@ -125,6 +125,7 @@ ports:
     Port of the Pod where the traffic will be routed
 
 2. Service Port
+
     Port of service 
 
 3. NodePort

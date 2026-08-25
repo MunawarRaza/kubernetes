@@ -7,7 +7,7 @@ Step 1: Installing containerd
 	wget https://github.com/containerd/containerd/releases/download/v2.3.3/containerd-2.3.3-linux-amd64.tar.gz
 	cd /usr/local/
 	sudo cp /opt/containerd-2.3.3-linux-amd64.tar.gz .
-	tar xzvf containerd-2.3.3-linux-amd64.tar.gz
+	tar containerd-2.3.3-linux-amd64.tar.gz
 
 	# systemd
 	wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
@@ -294,6 +294,7 @@ kubeadm join 10.130.21.31:6443 --token wapi7q.q4x2g5n9p453v2bl \
 
 ====
 VERSION=v1.34.0
+
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${VERSION}/crictl-${VERSION}-linux-amd64.tar.gz
 sudo tar -C /usr/local/bin -xzf crictl-${VERSION}-linux-amd64.tar.gz
 sudo chmod +x /usr/local/bin/crictl
